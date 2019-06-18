@@ -1,15 +1,29 @@
 #lang racket
-(provide closest-label
-         initial-label
-         unique-owner
-         unique-owner/1
-         unique-owner/2)
+(provide δ
+         closest-label
+         unowned-label
+         term-number/label?
+         term-match/label?
+         label-match?
+         term-different/label?
+         get-value
+         substitute/c
+         contains?)
 
 (require redex
-         "language.rkt")
+         "languages.rkt")
 
 (define-metafunction CPCF-O
-  [(closest-label-helper hole #f) "l0"]
+  [(δ (+ n_1 n_2))   ,(+   (term n_1) (term n_2))]
+  [(δ (- n_1 n_2))   ,(-   (term n_1) (term n_2))]
+  [(δ (and v_1 v_2)) ,(and (term v_1) (term v_2))]
+  [(δ (or v_1 v_2))  ,(or  (term v_1) (term v_2))]
+  [(δ (* n_1 n_2))   ,(*   (term v_1) (term v_2))]
+  [(δ (< n_1 n_2))   ,(<   (term v_1) (term v_2))]
+  [(δ (> n_1 n_2))   ,(>   (term v_1) (term v_2))]
+  [(δ (= n_1 n_2))   ,(=   (term v_1) (term v_2))])
+
+(define-metafunction CPCF-O
   [(closest-label-helper hole l) l]
   [(closest-label-helper (E e) l) (closest-label-helper E l)]
   [(closest-label-helper (v E) l) (closest-label-helper E l)]
@@ -17,44 +31,61 @@
   [(closest-label-helper (op v E) l) (closest-label-helper E l)]
   [(closest-label-helper (zero? E) l) (closest-label-helper E l)]
   [(closest-label-helper (if E e e) l) (closest-label-helper E l)]
-  [(closest-label-helper (mon (l* k j) κ E) l) (closest-label-helper E l*)]
-  [(closest-label-helper (check (k l*) E v) l) (closest-label-helper E l*)]
-  [(closest-label-helper (own E l*) l) (closest-label-helper E l*)])
+  [(closest-label-helper (mon (l_2 k j) κ E) l_1) (closest-label-helper E l_2)]
+  [(closest-label-helper (check (k l_2) E v) l_1) (closest-label-helper E l_2)]
+  [(closest-label-helper (own E l_2) l_1) (closest-label-helper E l_2)])
 
-(define initial-label (make-parameter "l0"))
+(define unowned-label (make-parameter "unowned"))
 (define-metafunction CPCF-O
-  [(closest-label E) (closest-label-helper E ,(initial-label))])
+  [(closest-label E) (closest-label-helper E ,(unowned-label))])
 
 (define-metafunction CPCF-O
-  [(unique-owner e) e])
+  [(term-number/label? (own v l_2) l_1)
+   ,(and (equal? (term l_1) (term l_2))
+         (term (term-number/label? v l_2)))]
+  [(term-number/label? n l) #t]
+  [(term-number/label? v l) #f])
 
-(define (unique-owner/1 e [l '()])
-  (cond [(and (list? e)
-              (equal? (first e) 'own)
-              (empty? l))
-         (unique-owner/1 (second e) (list (third e)))]
-        [(and (list? e)
-              (equal? (first e) 'own)
-              (not (empty? l)))
-         (and (equal? (first l) (third e)) (unique-owner/1 (second e) l))]
-        [(and (list? e)
-              (not (equal? (first e) 'own)))
-         (unless (equal? (first e) 'λ)
-           (error 'unique-owner/1 "non-λ input"))
-         #t]
-        [(not (list? e))
-         (unless (or (boolean? e) (integer? e))
-           (error 'unique-owner/1 "non-constant input"))
-         #t]))
+(define-metafunction CPCF-O
+  [(term-match/label? v_1 (own v_2 l_2) l_1)
+   ,(and (equal? (term l_1) (term l_2))
+         (term (term-match/label? v_2 v_1 l_1)))]
+  [(term-match/label? v_1 v_2 l)
+   ,((default-equiv) (term v_2) (term v_1))])
 
-(define (unique-owner/2 e [l '()])
-  (match e
-    [`(own ,e ,new-l)
-     (if (empty? l)
-         (unique-owner/2 e (list new-l))
-         (and (equal? (first l) new-l) (unique-owner/2 e l)))]
-    [(list 'λ _ ...)
-     #t]
-    [e
-     #:when (or (boolean? e) (integer? e))
-     #t]))
+(define-metafunction CPCF-O
+  [(label-match? (own v l_2) l_1)
+   ,(and (equal? (term l_1) (term l_2))
+         (term (label-match? v l_1)))]
+  [(label-match? v l)
+   #t])
+
+(define-metafunction CPCF-O
+  [(term-different/label? v_1 (own v_2 l_2) l_1)
+   ,(and (equal? (term l_1) (term l_2))
+         (term (term-different/label? v_2 v_1 l_1)))]
+  [(term-different/label? v_1 v_2 l_1)
+   ,(not ((default-equiv) (term v_2) (term v_1)))])
+
+(define-metafunction CPCF-O
+  [(get-value (own v l)) (get-value v)]
+  [(get-value v) v])
+
+(define-metafunction CPCF-O
+  substitute/c : κ x e -> κ
+  [(substitute/c (flat-ob (own e_2 l_2) (l_ob ...)) x e_1)
+   (flat-ob (substitute (own e_2 l_2) x (own e_1 l_2)) (l_ob ...))]
+  [(substitute/c (-> κ_1 κ_2) x e)
+   (-> (substitute/c κ_1 x e) (substitute/c κ_2 x e))]
+  [(substitute/c (->d κ_1 (λ (x_1 : t) κ_2)) x_1 e)
+   (->d (substitute/c κ_1 x_1 e) (λ (x_1 : t) κ_2))]
+  [(substitute/c (->d κ_1 (λ (y : t) κ_2)) x e)
+   (->d (substitute/c κ_1 x e) (λ (y : t) (substitute/c κ_2 x e)))])
+
+(define-metafunction CPCF-O-Γ
+  contains? : Γ x l -> boolean
+  [(contains? ∘ x l) #f]
+  [(contains? (Γ ∪ x : l_1) y l_2) ,(or
+                                   (and (equal? (term x) (term y))
+                                        (equal? (term l_1) (term l_2)))
+                                   (term (contains? Γ x l_1)))])

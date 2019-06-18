@@ -1,27 +1,21 @@
 #lang racket
-(provide δ
-         CPCF-red)
+(provide CPCF-I-red
+         CPCF-O-red)
 
 (require redex
-         "language.rkt"
+         "languages.rkt"
          "utils.rkt")
 
-(define-metafunction CPCF-O
-  [(δ (+ n_1 n_2))   ,(+   (term n_1) (term n_2))]
-  [(δ (- n_1 n_2))   ,(-   (term n_1) (term n_2))]
-  [(δ (and v_1 v_2)) ,(and (term v_1) (term v_2))]
-  [(δ (or v_1 v_2))  ,(or  (term v_1) (term v_2))])
-
-(define CPCF-red
+(define CPCF-I-red
   (reduction-relation
-   CPCF-O
+   CPCF-I
    #:domain e
 
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
-   (-->E (op1 n_1 n_2)
-         (δ (op1 n_1 n_2))
-         "op1")
+   (-->E (op* n_1 n_2)
+         (δ (op* n_1 n_2))
+         "op1,3")
 
    (-->E (op2 v_1 v_2)
          (δ (op2 v_1 v_2))
@@ -48,9 +42,11 @@
          (substitute e x v)
          "β")
 
-   ; TO-DO: μ
+   (-->E (μ (x : t) e)
+         (substitute e x (μ (x : t) e))
+         "μ")
 
-   (-->E (mon (k l j) (own-flat e (l_ob ...)) c)
+   (-->E (mon (k l j) (flat-ob e (l_ob ...)) c)
          (check (k j) (e c) c)
          "mon-first")
 
@@ -59,12 +55,17 @@
          "mon-higher"
          (where/error (λ (y : t) e) v))
 
+   (-->E (mon (k l j) (->d κ_1 (λ (x : t) κ_2)) v)
+         (λ (x : t) (mon (k l j) κ_2 (v (mon (l k j) κ_1 x))))
+         "mon-d"
+         (where/error (λ (y : t) e) v))
+
    (-->E (check (k j) #t v)
          v
          "check-t")
 
    (-->E (check (k j) #f v)
-         error
+         (error k j)
          "check-f")
 
    ; Reduction relation for discarding a context with `error`
@@ -78,3 +79,157 @@
    with
    [(--> (in-hole E a1) (in-hole E a2))
     (-->E a1 a2)]))
+
+(define CPCF-O-red
+  (reduction-relation
+   CPCF-O
+   #:domain e
+
+   ; IS THIS ELABORATION APPROPRIATE?
+   ; (i.e. What happens when there's only one rule)
+   (--> (in-hole E (op* v_1 v_2))
+        (in-hole E (δ (op* v_3 v_4)))
+        "op1,3"
+        (where v_3 (get-value v_1))
+        (where v_4 (get-value v_2))
+        (where l (closest-label E))
+        (side-condition (term (term-number/label? v_1 l)))
+        (side-condition (term (term-number/label? v_2 l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (zero? v))
+        (in-hole E #t)
+        "zero?-t"
+        (where l (closest-label E))
+        (side-condition (term (term-match/label? 0 v l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (zero? v))
+        (in-hole E #f)
+        "zero?-f"
+        (where l (closest-label E))
+        (side-condition (term (term-different/label? 0 v l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (op2 v_1 v_2))
+        (in-hole E (δ (op2 v_3 v_4)))
+        "op2"
+        (where v_3 (get-value v_1))
+        (where v_4 (get-value v_2))
+        (where l (closest-label E))
+        (side-condition (term (label-match? v_1 l)))
+        (side-condition (term (label-match? v_2 l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (if v e_1 e_2))
+        (in-hole E e_1)
+        "if-t"
+        (where l (closest-label E))
+        (side-condition (term (term-match/label? #t v l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (if v e_1 e_2))
+        (in-hole E e_2)
+        "if-f"
+        (where l (closest-label E))
+        (side-condition (term (term-match/label? #f v l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (v_1 v_2))
+        (in-hole E (own (substitute e x (own (get-value v_2) l)) l))
+        "β"
+        (where (λ (x : t) e) (get-value v_1))
+        (where l (closest-label E))
+        (side-condition (term (label-match? v_1 l)))
+        (side-condition (term (label-match? v_2 l)))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (μ (x : t) e))
+        (in-hole E (substitute e x (own (μ (x : t) e) l)))
+        "μ"
+        (where l (closest-label E))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   ; Without other guarantees, this rule changes where the evaluation gets stuck
+   ; for a monitor with a function contract and a non-function value
+   ; (i.e. This rule only applies if the value is a function which is not the case in the original rule)
+   (--> (in-hole E (mon (k l j) (-> κ_1 κ_2) v))
+        (in-hole E (λ (x : t) (mon (k l j) κ_2 (v (mon (l k j) κ_1 x)))))
+        "mon-higher"
+        (fresh x)
+        (where (λ (_ : t) _) (get-value v))
+        (side-condition (equal? (term l) (term (closest-label E))))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+   
+
+   (--> (in-hole E (mon (k l j) (flat-ob e (l_ob ...)) v))
+        (in-hole E (check (k j) (e c) c))
+        "mon-first"
+        (where c (get-value v))
+        (side-condition (equal? (term l) (term (closest-label E))))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+
+   (--> (in-hole E (check (k j) v_1 v_2))
+        (in-hole E v_2)
+        "check-t"
+        (side-condition (term (term-match/label? #t v_1 j)))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+
+   (--> (in-hole E (check (k j) v_1 v_2))
+        (in-hole E (error k j))
+        "check-f"
+        (side-condition (term (term-match/label? #f v_1 j)))
+        (where l (closest-label E))
+        (side-condition (not (equal? (term l) (unowned-label)))))
+
+   (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
+        (in-hole E (λ (y : t_2) (mon (k l j)
+                                     (substitute/c κ_2
+                                                   x
+                                                   (mon (l j j) κ_1 y))
+                                     (v (mon (l k j) κ_1 y)))))
+        "indy"
+        (fresh y)
+        (where (λ (_ : t_2) _) (get-value v))
+        (side-condition (equal? (term l) (term (closest-label E))))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+
+   (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
+        (in-hole E (λ (y : t_2) (mon (k l j)
+                                     (substitute/c κ_2
+                                                   x
+                                                   (mon (l k j) κ_1 y))
+                                     (v (mon (l k j) κ_1 y)))))
+        "picky"
+        (fresh y)
+        (where (λ (_ : t_2) _) (get-value v))
+        (side-condition (equal? (term l) (term (closest-label E))))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+   
+   (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
+        (in-hole E (λ (y : t_2) (mon (k l j)
+                                     (substitute/c κ_2
+                                                   x
+                                                   y)
+                                     (v (mon (l k j) κ_1 y)))))
+        "lax"
+        (fresh y)
+        (where (λ (_ : t_2) _) (get-value v))
+        (side-condition (equal? (term l) (term (closest-label E))))
+        (side-condition (not (equal? (term (closest-label E))
+                                     (unowned-label)))))
+
+   ; Reduction relation for discarding a context with `error`
+   (--> (in-hole E (error k j))
+        (error k j)
+        "error"
+        ; Prevent cycle in the trace graph
+        (side-condition (not (equal? (term E)
+                                     (term hole))))
+        (where l (closest-label E))
+        (side-condition (not (equal? (term l) (unowned-label)))))))

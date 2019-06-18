@@ -1,74 +1,102 @@
 #lang racket
 
 (require redex
-         "language.rkt"
-         "reduction-semantics.rkt")
+         "languages.rkt"
+         "reduction-semantics.rkt"
+         "utils.rkt")
 
-(test-->> CPCF-red
+(default-language CPCF-O)
+
+(test-->> CPCF-O-red
           (term 10)
           (term 10))
 
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term #t)
           (term #t))
 
-(test-->> CPCF-red
+(test-->> CPCF-O-red
+          (term (own (+ 10 20) "owner"))
+          (term (own 30 "owner")))
+(test-->> CPCF-O-red
           (term (+ 10 20))
-          (term 30))
-(test-->> CPCF-red
+          (term (+ 10 20)))
+
+#|
+(test-->> CPCF-O-red
           (term (- 10 20))
           (term -10))
 
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (zero? 0))
           (term #t))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (zero? 5))
           (term #f))
 
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (and #t #t))
           (term #t))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (and #t #f))
           (term #f))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (and #f #f))
           (term #f))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (or #t #t))
           (term #t))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (or #t #f))
           (term #t))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term (or #f #f))
           (term #f))
+|#
 
-(test-->> CPCF-red
-          (term ((λ (x : I) x) 10))
-          (term 10))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
+          (term (own ((λ (x : I) x) 10) "owner"))
+          (term (own (own (own 10 "owner") "owner") "owner")))
+
+#|
+(test-->> CPCF-O-red
           (term ((λ (x : I) x) (+ 10 20)))
           (term 30))
-(test-->> CPCF-red
+(test-->> CPCF-O-red
           (term ((λ (x : I) (zero? x)) (+ 10 20)))
           (term #f))
+|#
 
-(test-->> CPCF-red
-          (term (mon ("server" "client" "code")
-                     (own-flat (λ (x : I) (zero? x)) ())
-                     0))
-          (term 0))
+(test-->> CPCF-O-red
+          (term (own
+                 (mon ("server" "client" "code")
+                      (flat-ob (λ (x : I) (zero? x)) ())
+                      0)
+                 "client"))
+          (term (own 0 "client")))
 
-(test-->> CPCF-red
-          (term (((mon ("server" "client" "code")
-                       (->
-                        (-> (own-flat (λ (x : I) (zero? x)) ())
-                            (own-flat (λ (x : I) (zero? x)) ()))
-                        (-> (own-flat (λ (x : I) (zero? x)) ())
-                            (own-flat (λ (x : I) (zero? x)) ())))
-                       (λ (f : (-> (-> I I) (-> I I))) f))
-                  (λ (x : (-> I I)) x))
-                 0))
+
+(test-->> CPCF-O-red
+          (term (own
+                 ((mon ("server" "client" "code")
+                       (-> (flat-ob (λ (x : I) (zero? x)) ())
+                           (flat-ob (λ (x : I) (zero? x)) ()))
+                       (λ (x : (-> I I)) x))
+                  0)
+                 "client"))
+          (term (own (own 0 "client") "client")))
+
+
+(test-->> CPCF-O-red
+          (term (own
+                 (((mon ("server" "client" "code")
+                        (->
+                         (-> (flat-ob (λ (x : I) (zero? x)) ())
+                             (flat-ob (λ (x : I) (zero? x)) ()))
+                         (-> (flat-ob (λ (x : I) (zero? x)) ())
+                             (flat-ob (λ (x : I) (zero? x)) ())))
+                        (λ (f : (-> (-> I I) (-> I I))) f))
+                   (λ (x : (-> I I)) x))
+                  0)
+                 "client"))
           (term 0))
