@@ -94,22 +94,19 @@
         (where v_4 (get-value v_2))
         (where l (closest-label E))
         (side-condition (term (term-number/label? v_1 l)))
-        (side-condition (term (term-number/label? v_2 l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-number/label? v_2 l))))
 
    (--> (in-hole E (zero? v))
         (in-hole E #t)
         "zero?-t"
         (where l (closest-label E))
-        (side-condition (term (term-match/label? 0 v l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-match/label? 0 v l))))
 
    (--> (in-hole E (zero? v))
         (in-hole E #f)
         "zero?-f"
         (where l (closest-label E))
-        (side-condition (term (term-different/label? 0 v l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-different/label? 0 v l))))
 
    (--> (in-hole E (op2 v_1 v_2))
         (in-hole E (δ (op2 v_3 v_4)))
@@ -118,22 +115,19 @@
         (where v_4 (get-value v_2))
         (where l (closest-label E))
         (side-condition (term (label-match? v_1 l)))
-        (side-condition (term (label-match? v_2 l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (label-match? v_2 l))))
 
    (--> (in-hole E (if v e_1 e_2))
         (in-hole E e_1)
         "if-t"
         (where l (closest-label E))
-        (side-condition (term (term-match/label? #t v l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-match/label? #t v l))))
 
    (--> (in-hole E (if v e_1 e_2))
         (in-hole E e_2)
         "if-f"
         (where l (closest-label E))
-        (side-condition (term (term-match/label? #f v l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-match/label? #f v l))))
 
    (--> (in-hole E (v_1 v_2))
         (in-hole E (own (substitute e x (own (get-value v_2) l)) l))
@@ -141,14 +135,12 @@
         (where (λ (x : t) e) (get-value v_1))
         (where l (closest-label E))
         (side-condition (term (label-match? v_1 l)))
-        (side-condition (term (label-match? v_2 l)))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (label-match? v_2 l))))
 
    (--> (in-hole E (μ (x : t) e))
         (in-hole E (substitute e x (own (μ (x : t) e) l)))
-        "μ"
         (where l (closest-label E))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        "μ")
 
    ; Without other guarantees, this rule changes where the evaluation gets stuck
    ; for a monitor with a function contract and a non-function value
@@ -158,32 +150,24 @@
         "mon-higher"
         (fresh x)
         (where (λ (_ : t) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E))))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
-   
+        (side-condition (equal? (term l) (term (closest-label E)))))
+
 
    (--> (in-hole E (mon (k l j) (flat-ob e (l_ob ...)) v))
         (in-hole E (check (k j) (e c) c))
         "mon-first"
         (where c (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E))))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
+        (side-condition (equal? (term l) (term (closest-label E)))))
 
    (--> (in-hole E (check (k j) v_1 v_2))
         (in-hole E v_2)
         "check-t"
-        (side-condition (term (term-match/label? #t v_1 j)))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
+        (side-condition (term (term-match/label? #t v_1 j))))
 
    (--> (in-hole E (check (k j) v_1 v_2))
         (in-hole E (error k j))
         "check-f"
-        (side-condition (term (term-match/label? #f v_1 j)))
-        (where l (closest-label E))
-        (side-condition (not (equal? (term l) (unowned-label)))))
+        (side-condition (term (term-match/label? #f v_1 j))))
 
    (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
         (in-hole E (λ (y : t_2) (mon (k l j)
@@ -194,9 +178,7 @@
         "indy"
         (fresh y)
         (where (λ (_ : t_2) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E))))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
+        (side-condition (equal? (term l) (term (closest-label E)))))
 
    (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
         (in-hole E (λ (y : t_2) (mon (k l j)
@@ -207,10 +189,8 @@
         "picky"
         (fresh y)
         (where (λ (_ : t_2) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E))))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
-   
+        (side-condition (equal? (term l) (term (closest-label E)))))
+
    (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
         (in-hole E (λ (y : t_2) (mon (k l j)
                                      (substitute/c κ_2
@@ -220,9 +200,7 @@
         "lax"
         (fresh y)
         (where (λ (_ : t_2) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E))))
-        (side-condition (not (equal? (term (closest-label E))
-                                     (unowned-label)))))
+        (side-condition (equal? (term l) (term (closest-label E)))))
 
    ; Reduction relation for discarding a context with `error`
    (--> (in-hole E (error k j))
@@ -230,6 +208,4 @@
         "error"
         ; Prevent cycle in the trace graph
         (side-condition (not (equal? (term E)
-                                     (term hole))))
-        (where l (closest-label E))
-        (side-condition (not (equal? (term l) (unowned-label)))))))
+                                     (term hole)))))))

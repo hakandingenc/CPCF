@@ -20,7 +20,7 @@
           (term (own 30 "owner")))
 (test-->> CPCF-O-red
           (term (+ 10 20))
-          (term (+ 10 20)))
+          (term 30))
 
 #|
 (test-->> CPCF-O-red
