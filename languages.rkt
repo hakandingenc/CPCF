@@ -39,6 +39,7 @@
 
 (define-extended-language CPCF-O
   CPCF-I
+  [all e κ]
   [κ    (flat-ob e (l ...)) (-> κ κ) (->d κ (λ (x : t) κ))]
   [e    .... (own e l)]
   [v    .... (own v l)]
