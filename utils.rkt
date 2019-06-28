@@ -87,10 +87,12 @@
 (define-metafunction CPCF-O-Γ
   contains? : Γ x l -> boolean
   [(contains? ∘ x l) #f]
-  [(contains? (Γ ∪ x : l_1) y l_2) ,(or
-                                   (and (equal? (term x) (term y))
-                                        (equal? (term l_1) (term l_2)))
-                                   (term (contains? Γ x l_1)))])
+  [(contains? (Γ ∪ x : l_1) y l_2)
+   ,(or
+     (and (equal? (term x) (term y))
+          (equal? (term l_1) (term l_2)))
+     (term (contains? Γ y l_2)))])
+
 (define-judgment-form CPCF-O-Γ
   #:mode (core-term I)
   #:contract (core-term e)
