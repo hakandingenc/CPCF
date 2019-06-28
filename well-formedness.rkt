@@ -51,14 +51,6 @@
    ------------------------- "var"
    (well-formed Γ l x)]
 
-  
-  ;; OVERWRITTEN
-  #;[(well-formed Γ k e)
-     (well-formed/c Γ (k) (l) j κ)
-     (side-condition ,(not (equal? (term k) (term l))))
-     ------------------------- "mon"
-     (well-formed Γ l (mon (k l j) κ (own e k)))]
-
   [------------------------- "error"
    (well-formed Γ l (error k j))]
 
@@ -72,17 +64,10 @@
    ------------------------- "mon"
    (well-formed Γ l (mon (k l j) κ e))])
 
-
-
 (define-judgment-form
   CPCF-O-Γ
   #:mode     (well-formed/c I I       I       I I)
   #:contract (well-formed/c Γ (l ...) (l ...) l κ)
-
-  ;; OVERWRITTEN
-  #;[(well-formed Γ j e)
-     ------------------------- "flat-ob"
-     (well-formed/c Γ (k ...) (l ...) j (flat-ob (own e j) (k ...)))]
 
   [(well-formed Γ j e)
    (side-condition ,(subset? (list->set (term (k_1 ...)))
@@ -118,8 +103,16 @@
    ------------------------- "app"
    (loosely-well-formed Γ l ((own e_1 l ) e_2))])
 
-(judgment-holds (well-formed (∘ ∪ x : "l") "l" (own x "l")))
-(judgment-holds (well-formed ∘ "l" 3))
-(judgment-holds (well-formed ∘ "l" (3 5)))
-(judgment-holds (well-formed (∘ ∪ x : "l") "l" x))
-(judgment-holds (well-formed ∘ "l" x))
+#|
+Overwritten Rules
+
+[(well-formed Γ k e)
+ (well-formed/c Γ (k) (l) j κ)
+ (side-condition ,(not (equal? (term k) (term l))))
+ ------------------------- "mon"
+ (well-formed Γ l (mon (k l j) κ (own e k)))]
+
+[(well-formed Γ j e)
+ ------------------------- "flat-ob"
+ (well-formed/c Γ (k ...) (l ...) j (flat-ob (own e j) (k ...)))]
+|#
