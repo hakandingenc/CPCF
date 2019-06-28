@@ -2,7 +2,9 @@
 
 (provide CPCF-I
          CPCF-O
-         CPCF-O-Γ)
+         CPCF-O-Γ
+         CPCF-O-Γ-Δ
+         CPCF-O-Γ-Δ-core)
 
 (require redex)
 
@@ -47,3 +49,27 @@
 (define-extended-language CPCF-O-Γ
   CPCF-O
   [Γ ∘ (Γ ∪ x : l)])
+
+(define-extended-language CPCF-O-Γ-Δ
+  CPCF-O-Γ
+  [Δ ∘ (Δ ∪ x : t)])
+
+(define-extended-language CPCF-O-Γ-Δ-core
+  CPCF-O-Γ-Δ
+  [core-κ   (flat-ob core-e (l ...))
+            (-> core-κ core-κ)
+            (->d core-κ (λ (x : t) core-κ))]
+  [core-e   v
+            x
+            (core-e core-e)
+            (μ (x : t) core-e)
+            (op core-e core-e)
+            (zero? core-e)
+            (if core-e core-e core-e)
+            (mon (k l j) core-κ core-e)
+            (own core-e l)]
+  [v        c (λ (x : t) core-e)]
+  #:binding-forms
+  (->d core-κ (λ (x : t) core-κ #:refers-to x))
+  (μ (x : t) core-e #:refers-to x)
+  (λ (x : t) core-e #:refers-to x))

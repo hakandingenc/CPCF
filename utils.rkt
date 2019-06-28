@@ -8,7 +8,9 @@
          term-different/label?
          get-value
          substitute/c
-         contains?)
+         contains?
+         core-term
+         types)
 
 (require redex
          "languages.rkt")
@@ -89,3 +91,100 @@
                                    (and (equal? (term x) (term y))
                                         (equal? (term l_1) (term l_2)))
                                    (term (contains? Γ x l_1)))])
+(define-judgment-form CPCF-O-Γ
+  #:mode (core-term I)
+  #:contract (core-term e)
+
+  [-------------------------
+   (core-term c)]
+
+  [(core-term e)
+   -------------------------
+   (core-term (λ (x : t) e))]
+
+  [-------------------------
+   (core-term x)]
+
+  [(core-term e_1)
+   (core-term e_2)
+   -------------------------
+   (core-term (e_1 e_2))]
+
+  [(core-term e)
+   -------------------------
+   (core-term (μ (x : t) e))]
+
+  [(core-term e_1)
+   (core-term e_2)
+   -------------------------
+   (core-term (op e_1 e_2))]
+
+  [(core-term e)
+   -------------------------
+   (core-term (zero? e))]
+
+  [(core-term e_1)
+   (core-term e_2)
+   (core-term e_3)
+   -------------------------
+   (core-term (if e_1 e_2 e_3))]
+
+  [(core-term e)
+   -------------------------
+   (core-term (mon (k l j) κ e))])
+
+(define-judgment-form CPCF-O-Γ-Δ
+  #:mode (types I I O)
+  #:contract (types Δ all t)
+
+  [------------------------- "I"
+   (types Δ number I)]
+
+  [------------------------- "B"
+   (types Δ boolean B)]
+
+  [(types (Δ ∪ x : t_1) e t_2)
+   ------------------------- "λ"
+   (types Δ (λ (x : t_1) e) (-> t_1 t_2))]
+
+  [--------------------- "var"
+   (types (Δ ∪ x : t) x t)]
+
+  [(types Δ x_1 t_1)
+   (side-condition (different x_1 x_2))
+   ------------------------------------ "var-extend"
+   (types (Δ ∪ x_2 : t_2) x_1 t_1)]
+
+  [(types Δ e_1 (-> t_1 t_2))
+   (types Δ e_2 t_1)
+   ------------------------- "app"
+   (types Δ (e_1 e_2) t_2)]
+
+  [(types (Δ ∪ x : t_1) e t_1)
+   ------------------------- "μ"
+   (types Δ (μ (x : t_1) e) t_1)]
+
+  [(types Δ e_1 B)
+   (types Δ e_2 t_1)
+   (types Δ e_3 t_1)
+   -----------------------------"if"
+   (types Δ (if e_1 e_2 e_3) t_1)]
+
+  [(types Δ e I)
+   -----------------------------"zero?"
+   (types Δ (zero? e) B)]
+
+  [(types Δ e_1 I)
+   (types Δ e_2 I)
+   -----------------------------"op1,3"
+   (types Δ (op* e_1 e_2) I)]
+
+  [(types Δ e_1 B)
+   (types Δ e_2 B)
+   -----------------------------"op2"
+   (types Δ (op2 e_1 e_2) B)]
+
+  [(types Δ e t)
+   (types Δ κ (con t))
+   -----------------------------"mon"
+   (types Δ (mon (k l j) κ e) t)])
