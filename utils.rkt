@@ -32,7 +32,7 @@
   [(closest-label-helper (op E e) l) (closest-label-helper E l)]
   [(closest-label-helper (op v E) l) (closest-label-helper E l)]
   [(closest-label-helper (zero? E) l) (closest-label-helper E l)]
-  [(closest-label-helper (if E e e) l) (closest-label-helper E l)]
+  [(closest-label-helper (if E e_1 e_2) l) (closest-label-helper E l)]
   [(closest-label-helper (mon (l_2 k j) κ E) l_1) (closest-label-helper E l_2)]
   [(closest-label-helper (check (k l_2) E v) l_1) (closest-label-helper E l_2)]
   [(closest-label-helper (own E l_2) l_1) (closest-label-helper E l_2)])
