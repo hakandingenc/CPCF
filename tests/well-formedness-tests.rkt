@@ -1,7 +1,7 @@
 #lang racket
 (require redex
          rackunit
-         "well-formedness.rkt")
+         "../src/well-formedness.rkt")
 
 (check-true (judgment-holds (well-formed (∘ ∪ x : "l") "l" (own x "l"))))
 (check-true (judgment-holds (well-formed ∘ "l" 3)))

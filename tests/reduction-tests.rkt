@@ -1,9 +1,9 @@
 #lang racket
 
 (require redex
-         "languages.rkt"
-         "reduction-semantics.rkt"
-         "utils.rkt")
+         "../src/languages.rkt"
+         "../src/reduction-semantics.rkt"
+         "../src/utils.rkt")
 
 (default-language CPCF-O)
 

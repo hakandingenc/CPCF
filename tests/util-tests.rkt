@@ -1,8 +1,8 @@
 #lang racket
 
 (require redex
-         "languages.rkt"
-         "utils.rkt")
+         "../src/languages.rkt"
+         "../src/utils.rkt")
 
 (default-language CPCF-O)
 
