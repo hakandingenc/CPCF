@@ -20,10 +20,10 @@
   [(δ (- n_1 n_2))   ,(-   (term n_1) (term n_2))]
   [(δ (and v_1 v_2)) ,(and (term v_1) (term v_2))]
   [(δ (or v_1 v_2))  ,(or  (term v_1) (term v_2))]
-  [(δ (* n_1 n_2))   ,(*   (term v_1) (term v_2))]
-  [(δ (< n_1 n_2))   ,(<   (term v_1) (term v_2))]
-  [(δ (> n_1 n_2))   ,(>   (term v_1) (term v_2))]
-  [(δ (= n_1 n_2))   ,(=   (term v_1) (term v_2))])
+  [(δ (* n_1 n_2))   ,(*   (term n_1) (term n_2))]
+  [(δ (< n_1 n_2))   ,(<   (term n_1) (term n_2))]
+  [(δ (> n_1 n_2))   ,(>   (term n_1) (term n_2))]
+  [(δ (= n_1 n_2))   ,(=   (term n_1) (term n_2))])
 
 (define-metafunction CPCF-O
   [(closest-label-helper hole l) l]
