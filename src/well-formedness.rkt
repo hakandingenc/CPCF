@@ -101,7 +101,7 @@
   [(loosely-well-formed Γ l e_1)
    (loosely-well-formed Γ l e_2)
    ------------------------- "app"
-   (loosely-well-formed Γ l ((own e_1 l ) e_2))])
+   (loosely-well-formed Γ l ((own e_1 l) e_2))])
 
 #|
 Overwritten Rules
