@@ -13,9 +13,9 @@
 
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
-   (-->E (op* n_1 n_2)
-         (δ (op* n_1 n_2))
-         "op1,3")
+   (-->E (op1 n_1 n_2)
+         (δ (op1 n_1 n_2))
+         "op1")
 
    (-->E (op2 v_1 v_2)
          (δ (op2 v_1 v_2))
@@ -87,9 +87,9 @@
 
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
-   (--> (in-hole E (op* v_1 v_2))
-        (in-hole E (δ (op* v_3 v_4)))
-        "op1,3"
+   (--> (in-hole E (op1 v_1 v_2))
+        (in-hole E (δ (op1 v_3 v_4)))
+        "op1"
         (where v_3 (get-value v_1))
         (where v_4 (get-value v_2))
         (where l (closest-label E))
