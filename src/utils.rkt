@@ -189,4 +189,22 @@
   [(types Δ e t)
    (types Δ κ (con t))
    -----------------------------"mon"
-   (types Δ (mon (k l j) κ e) t)])
+   (types Δ (mon (k l j) κ e) t)]
+
+  [(types Δ e t)
+   -----------------------------"own"
+   (types Δ (own e l) t)]
+
+  [(types Δ e (-> t B))
+   -----------------------------"flat-ob"
+   (types Δ (flat-ob e (l ...)) (con t))]
+
+  [(types Δ κ_1 (con t_1))
+   (types Δ κ_2 (con t_2))
+   ------------------------- "->"
+   (types Δ (-> κ_1 κ_2) (con (-> t_1 t_2)))]
+
+  [(types Δ κ_1 (con t_1))
+   (types Δ κ_2 (con t_2))
+   ------------------------- "->d"
+   (types Δ (->d κ_1 (λ (x : t) κ_2)) (con (-> t_1 t_2)))])
