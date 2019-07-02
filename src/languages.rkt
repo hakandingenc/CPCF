@@ -16,7 +16,6 @@
   [op op1 op2]
   [op1  + -]
   [op2  and or]
-  [op* op1 #;op3]
   [v   c (λ (x : t) e)]
   [c   n boolean]
   [n   integer]
