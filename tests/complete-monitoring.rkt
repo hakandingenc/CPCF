@@ -1,10 +1,13 @@
 #lang racket
 
 (require redex
-         "languages.rkt"
-         "reduction-semantics.rkt"
-         "well-formedness.rkt"
-         "utils.rkt")
+         "../src/languages.rkt"
+         "../src/reduction-semantics.rkt"
+         "../src/well-formedness.rkt"
+         "../src/utils.rkt")
+
+(define-union-language CPCF-O-Γ-Δ
+  CPCF-O-Γ CPCF-O-Δ)
 
 (define-judgment-form CPCF-O-Γ-Δ
   #:mode (suitable I)

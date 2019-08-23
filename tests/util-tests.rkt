@@ -19,54 +19,72 @@
 (test-equal (term (substitute/c
                    (->d
                     (flat-ob (own (λ (x : I) (zero? x))
-                                   "owner")
-                              ())
+                                  "owner")
+                             ())
                     (λ (x : I)
                       (flat-ob (λ (x : I) (zero? x))
-                                ())))
+                               ())))
                    x
                    10))
             (term (->d
                    (flat-ob (own (λ (x : I) (zero? x))
-                                  "owner")
-                             ())
+                                 "owner")
+                            ())
                    (λ (x : I)
                      (flat-ob (λ (x : I) (zero? x))
-                               ())))))
+                              ())))))
 
 (test-equal (term (substitute/c
                    (->d
                     (flat-ob (own (λ (y : I) (zero? x))
-                                   "owner")
-                              ())
+                                  "owner")
+                             ())
                     (λ (x : I)
                       (flat-ob (λ (x : I) (zero? x))
-                                ())))
+                               ())))
                    x
                    10))
             (term (->d
                    (flat-ob (own (λ (y : I) (zero? (own 10 "owner")))
-                                  "owner")
-                             ())
+                                 "owner")
+                            ())
                    (λ (x : I)
                      (flat-ob (λ (x : I) (zero? x))
-                               ())))))
+                              ())))))
 
 (test-equal (term (substitute/c
                    (->d
                     (flat-ob (own (λ (x : I) (zero? x))
-                                   "owner")
-                              ())
+                                  "owner")
+                             ())
                     (λ (y : I)
                       (flat-ob (own (λ (y : I) (zero? x)) "owner")
-                                ())))
+                               ())))
                    x
                    10))
             (term (->d
                    (flat-ob (own (λ (x : I) (zero? x))
-                                  "owner")
-                             ())
+                                 "owner")
+                            ())
                    (λ (y : I)
                      (flat-ob (own (λ (y : I) (zero? (own 10 "owner")))
-                                    "owner")
-                               ())))))
+                                   "owner")
+                              ())))))
+
+(test-equal (term (var->label x)) "x")
+
+(test-equal (term (free-vars x)) (term (x)))
+(test-equal (term (free-vars
+                   (if (λ (x : I) z)
+                       (mon ("" "" "")
+                            (->d (-> (flat-ob 3 ())
+                                     (flat-ob t ()))
+                                 (λ (s : I) (flat-ob s ())))
+                            (+ r
+                               (mon ("" "" "")
+                                    (->d (-> (flat-ob 3 ())
+                                             (flat-ob (λ (k : B) k) ()))
+                                         (λ (l : I) (flat-ob m ())))
+                                    (own u ""))))
+                       (μ (y : I) 10))))
+            (term (z t r m u)))

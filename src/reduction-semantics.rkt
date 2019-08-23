@@ -14,12 +14,15 @@
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
    (-->E (op1 n_1 n_2)
-         (δ (op1 n_1 n_2))
-         "op1")
+         v_result
+         "op1"
+         (where v_result (δ-i (op1 n_1 n_2))))
 
    (-->E (op2 v_1 v_2)
-         (δ (op2 v_1 v_2))
-         "op2")
+         v_result
+         "op2"
+         (where v_result (δ-i (op2 v_1 v_2))))
+
 
    (-->E (zero? 0)
          #t
@@ -46,19 +49,23 @@
          (substitute e x (μ (x : t) e))
          "μ")
 
-   (-->E (mon (k l j) (flat-ob e (l_ob ...)) c)
+   (-->E (mon (k l j) (flat e) c)
          (check (k j) (e c) c)
          "mon-first")
 
    (-->E (mon (k l j) (-> κ_1 κ_2) v)
          (λ (x : t) (mon (k l j) κ_2 (v (mon (l k j) κ_1 x))))
          "mon-higher"
-         (where/error (λ (y : t) e) v))
+         (where (λ (_ : t) _) v))
 
-   (-->E (mon (k l j) (->d κ_1 (λ (x : t) κ_2)) v)
-         (λ (x : t) (mon (k l j) κ_2 (v (mon (l k j) κ_1 x))))
+   (-->E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v)
+         (λ (y : t_2) (mon (k l j) (substitute κ_2
+                                               x
+                                               y)
+                           (v (mon (l k j) κ_1 y))))
          "mon-d"
-         (where/error (λ (y : t) e) v))
+         (fresh y)
+         (where (λ (_ : t_2) _) v))
 
    (-->E (check (k j) #t v)
          v
@@ -69,8 +76,8 @@
          "check-f")
 
    ; Reduction relation for discarding a context with `error`
-   (--> (in-hole E error)
-        error
+   (--> (in-hole E (error k j))
+        (error k j)
         "error"
         ; Prevent cycle in the trace graph
         (side-condition (not (equal? (term E)
@@ -88,11 +95,12 @@
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
    (--> (in-hole E (op1 v_1 v_2))
-        (in-hole E (δ (op1 v_3 v_4)))
+        (in-hole E v_result)
         "op1"
         (where v_3 (get-value v_1))
         (where v_4 (get-value v_2))
         (where l (closest-label E))
+        (where v_result (δ-o (op1 v_3 v_4)))
         (side-condition (term (term-number/label? v_1 l)))
         (side-condition (term (term-number/label? v_2 l))))
 
@@ -106,14 +114,16 @@
         (in-hole E #f)
         "zero?-f"
         (where l (closest-label E))
+        (side-condition (term (term-number? v)))
         (side-condition (term (term-different/label? 0 v l))))
 
    (--> (in-hole E (op2 v_1 v_2))
-        (in-hole E (δ (op2 v_3 v_4)))
+        (in-hole E v_result)
         "op2"
         (where v_3 (get-value v_1))
         (where v_4 (get-value v_2))
         (where l (closest-label E))
+        (where v_result (δ-o (op2 v_3 v_4)))
         (side-condition (term (label-match? v_1 l)))
         (side-condition (term (label-match? v_2 l))))
 
@@ -152,7 +162,6 @@
         (where (λ (_ : t) _) (get-value v))
         (side-condition (equal? (term l) (term (closest-label E)))))
 
-
    (--> (in-hole E (mon (k l j) (flat-ob e (l_ob ...)) v))
         (in-hole E (check (k j) (e c) c))
         "mon-first"
@@ -180,28 +189,6 @@
         (where (λ (_ : t_2) _) (get-value v))
         (side-condition (equal? (term l) (term (closest-label E)))))
 
-   (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
-        (in-hole E (λ (y : t_2) (mon (k l j)
-                                     (substitute/c κ_2
-                                                   x
-                                                   (mon (l k j) κ_1 y))
-                                     (v (mon (l k j) κ_1 y)))))
-        "picky"
-        (fresh y)
-        (where (λ (_ : t_2) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E)))))
-
-   (--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
-        (in-hole E (λ (y : t_2) (mon (k l j)
-                                     (substitute/c κ_2
-                                                   x
-                                                   y)
-                                     (v (mon (l k j) κ_1 y)))))
-        "lax"
-        (fresh y)
-        (where (λ (_ : t_2) _) (get-value v))
-        (side-condition (equal? (term l) (term (closest-label E)))))
-
    ; Reduction relation for discarding a context with `error`
    (--> (in-hole E (error k j))
         (error k j)
@@ -209,3 +196,27 @@
         ; Prevent cycle in the trace graph
         (side-condition (not (equal? (term E)
                                      (term hole)))))))
+
+#|
+(--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
+     (in-hole E (λ (y : t_2) (mon (k l j)
+                                  (substitute/c κ_2
+                                                x
+                                                (mon (l k j) κ_1 y))
+                                  (v (mon (l k j) κ_1 y)))))
+     "picky"
+     (fresh y)
+     (where (λ (_ : t_2) _) (get-value v))
+     (side-condition (equal? (term l) (term (closest-label E)))))
+
+(--> (in-hole E (mon (k l j) (->d κ_1 (λ (x : t_1) κ_2)) v))
+     (in-hole E (λ (y : t_2) (mon (k l j)
+                                  (substitute/c κ_2
+                                                x
+                                                y)
+                                  (v (mon (l k j) κ_1 y)))))
+     "lax"
+     (fresh y)
+     (where (λ (_ : t_2) _) (get-value v))
+     (side-condition (equal? (term l) (term (closest-label E)))))
+|#

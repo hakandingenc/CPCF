@@ -4,44 +4,49 @@
          unowned-label
          term-number/label?
          term-match/label?
+         term-number?
          label-match?
          term-different/label?
          get-value
          substitute/c
          contains?
-         core-term
-         types)
+         var->label
+         free-vars
+         apply-reduction-relation*/n)
 
 (require redex
          "languages.rkt")
 
-(define-metafunction CPCF-O
-  [(δ (+ n_1 n_2))   ,(+   (term n_1) (term n_2))]
-  [(δ (- n_1 n_2))   ,(-   (term n_1) (term n_2))]
-  [(δ (and v_1 v_2)) ,(and (term v_1) (term v_2))]
-  [(δ (or v_1 v_2))  ,(or  (term v_1) (term v_2))]
-  [(δ (* n_1 n_2))   ,(*   (term n_1) (term n_2))]
-  [(δ (< n_1 n_2))   ,(<   (term n_1) (term n_2))]
-  [(δ (> n_1 n_2))   ,(>   (term n_1) (term n_2))]
-  [(δ (= n_1 n_2))   ,(=   (term n_1) (term n_2))])
+(define-metafunction source
+  δ : (op  c   c) -> c
+  [(δ (+   n_1 n_2)) ,(+   (term n_1) (term n_2))]
+  [(δ (-   n_1 n_2)) ,(-   (term n_1) (term n_2))]
+  [(δ (and b_1 b_2)) ,(and (term b_1) (term b_2))]
+  [(δ (or  b_1 b_2)) ,(or  (term b_1) (term b_2))]
+  [(δ (*   n_1 n_2)) ,(*   (term n_1) (term n_2))]
+  [(δ (<   n_1 n_2)) ,(<   (term n_1) (term n_2))]
+  [(δ (>   n_1 n_2)) ,(>   (term n_1) (term n_2))]
+  [(δ (=   n_1 n_2)) ,(=   (term n_1) (term n_2))])
 
 (define-metafunction CPCF-O
-  [(closest-label-helper hole l) l]
-  [(closest-label-helper (E e) l) (closest-label-helper E l)]
-  [(closest-label-helper (v E) l) (closest-label-helper E l)]
-  [(closest-label-helper (op E e) l) (closest-label-helper E l)]
-  [(closest-label-helper (op v E) l) (closest-label-helper E l)]
-  [(closest-label-helper (zero? E) l) (closest-label-helper E l)]
-  [(closest-label-helper (if E e_1 e_2) l) (closest-label-helper E l)]
-  [(closest-label-helper (mon (l_2 k j) κ E) l_1) (closest-label-helper E l_2)]
-  [(closest-label-helper (check (k l_2) E v) l_1) (closest-label-helper E l_2)]
-  [(closest-label-helper (own E l_2) l_1) (closest-label-helper E l_2)])
+  closest-label-helper : E                   l ->  l
+  [(closest-label-helper hole                l)    l]
+  [(closest-label-helper (E e)               l)    (closest-label-helper E l)]
+  [(closest-label-helper (v E)               l)    (closest-label-helper E l)]
+  [(closest-label-helper (op E e)            l)    (closest-label-helper E l)]
+  [(closest-label-helper (op v E)            l)    (closest-label-helper E l)]
+  [(closest-label-helper (zero? E)           l)    (closest-label-helper E l)]
+  [(closest-label-helper (if E e_1 e_2)      l)    (closest-label-helper E l)]
+  [(closest-label-helper (mon (l_2 k j) κ E) l_1)  (closest-label-helper E l_2)]
+  [(closest-label-helper (check (k l_2) E v) l_1)  (closest-label-helper E l_2)]
+  [(closest-label-helper (own E l_2)         l_1)  (closest-label-helper E l_2)])
 
 (define unowned-label (make-parameter "unowned"))
 (define-metafunction CPCF-O
   [(closest-label E) (closest-label-helper E ,(unowned-label))])
 
 (define-metafunction CPCF-O
+  term-number/label? : v l -> boolean
   [(term-number/label? (own v l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
          (term (term-number/label? v l_2)))]
@@ -49,6 +54,7 @@
   [(term-number/label? v l) #f])
 
 (define-metafunction CPCF-O
+  term-match/label? : v v l -> boolean
   [(term-match/label? v_1 (own v_2 l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
          (term (term-match/label? v_2 v_1 l_1)))]
@@ -56,13 +62,24 @@
    ,((default-equiv) (term v_2) (term v_1))])
 
 (define-metafunction CPCF-O
+  term-number? : v -> boolean
+  [(term-number? (own v l) l_1)
+   (term-number? v)]
+  [(term-number? n)
+   #t]
+  [(term-number? v)
+   #f])
+
+(define-metafunction CPCF-O
+  label-match? : e l -> boolean
   [(label-match? (own v l_2) l_1)
-   ,(and (equal? (term l_1) (term l_2))
+   ,(and ((default-equiv) (term l_1) (term l_2))
          (term (label-match? v l_1)))]
   [(label-match? v l)
    #t])
 
 (define-metafunction CPCF-O
+  term-different/label? : v v l -> boolean
   [(term-different/label? v_1 (own v_2 l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
          (term (term-different/label? v_2 v_1 l_1)))]
@@ -70,8 +87,9 @@
    ,(not ((default-equiv) (term v_2) (term v_1)))])
 
 (define-metafunction CPCF-O
+  get-value : v    ->    v
   [(get-value (own v l)) (get-value v)]
-  [(get-value v) v])
+  [(get-value v)         v])
 
 (define-metafunction CPCF-O
   substitute/c : κ x e -> κ
@@ -93,118 +111,96 @@
           (equal? (term l_1) (term l_2)))
      (term (contains? Γ y l_2)))])
 
-(define-judgment-form CPCF-O-Γ
-  #:mode (core-term I)
-  #:contract (core-term e)
+(define-metafunction PCF
+  [(different x x) #f]
+  [(different x y) #t])
 
-  [-------------------------
-   (core-term c)]
+(define-metafunction PCF
+  contains-free-var? : e x -> boolean
+  [(contains-free-var? c x) #f]
+  [(contains-free-var? (λ (x : t) e) y)
+   ,(and (term (different x y))
+         (term (contains-free-var? e y)))]
+  [(contains-free-var? x y)
+   ,(not (term (different x y)))]
+  [(contains-free-var? (e_1 e_2) x)
+   ,(or (term (contains-free-var? e_1 x))
+        (term (contains-free-var? e_2 x)))]
+  [(contains-free-var? (μ (x : t) e) y)
+   ,(or (term (different x y))
+        (term (contains-free-var? e x)))]
+  [(contains-free-var? (op e_1 e_2) x)
+   ,(or (term (contains-free-var? e_1 x))
+        (term (contains-free-var? e_2 x)))]
+  [(contains-free-var? (zero? e) x)
+   (contains-free-var-x e x)]
+  [(contains-free-var? (if e_1 e_2 e_3) x)
+   ,(or (term (contains-free-var? e_1 x))
+        (term (contains-free-var? e_2 x))
+        (term (contains-free-var? e_3 x)))])
 
-  [(core-term e)
-   -------------------------
-   (core-term (λ (x : t) e))]
+(define label-regexp (regexp "^(.+)«([0-9]+)([☺☹]+)?»$"))
+(define-metafunction CPCF
+  var->label : x -> l
+  [(var->label x) ,(match (symbol->string (term x))
+                     [(regexp #rx"^(.+)«([0-9]+)»$" (list _ base-name index))
+                      base-name]
+                     [(regexp #rx"^(.+)«([0-9]+)([☺☹]+)»$" (list _ base-name index smiley-number))
+                      base-name]
+                     [x x])])
 
-  [-------------------------
-   (core-term x)]
+(define-metafunction CPCF-O
+  free-vars : e -> (x ...)
+  [(free-vars c) ()]
+  [(free-vars (λ (x : t) e))
+   (/ (free-vars e) (x))]
+  [(free-vars x) (x)]
+  [(free-vars (e_1 e_2 ...))
+   (∪ (free-vars e_1) (free-vars e_2) ...)]
+  [(free-vars (μ (x : t) e))
+   (/ (free-vars e) (x))]
+  [(free-vars (op e_1 e_2))
+   (∪ (free-vars e_1) (free-vars e_2))]
+  [(free-vars (zero? e))
+   (free-vars e)]
+  [(free-vars (if e_1 e_2 e_3))
+   (∪ (free-vars e_1) (free-vars e_2) (free-vars e_3))]
+  [(free-vars (own e l))
+   (free-vars e)]
+  [(free-vars (mon (_ _ _) κ e))
+   (∪ (free-vars/c κ) (free-vars e))])
 
-  [(core-term e_1)
-   (core-term e_2)
-   -------------------------
-   (core-term (e_1 e_2))]
+(define-metafunction CPCF-O
+  free-vars/c : κ -> (x ...)
+  [(free-vars/c (flat-ob e (l_ob ...)))
+   (free-vars e)]
+  [(free-vars/c (-> κ_1 κ_2))
+   (∪ (free-vars/c κ_1) (free-vars/c κ_2))]
+  [(free-vars/c (->d κ_1 (λ (x_1 : t) κ_2)))
+   (∪ (free-vars/c κ_1) (/ (free-vars/c κ_2) (x_1)))])
 
-  [(core-term e)
-   -------------------------
-   (core-term (μ (x : t) e))]
+(define-metafunction CPCF-O
+  ∪ : (x ...) ... -> (x ...)
+  [(∪ (x_1 ...) (x_2 ...) (x_3 ...) ...)
+   (∪ (x_1 ... x_2 ...) (x_3 ...) ...)]
+  [(∪ (x_1 ...))
+   (x_1 ...)]
+  [(∪) ()])
 
-  [(core-term e_1)
-   (core-term e_2)
-   -------------------------
-   (core-term (op e_1 e_2))]
+(define-metafunction CPCF-O
+  / : (x ...) (x ...) -> (x ...)
+  [(/ (x ...) ()) (x ...)]
+  [(/ (x_1 ... x_2 x_3 ...) (x_2 x_4 ...))
+   (/ (x_1 ... x_3 ...) (x_2 x_4 ...))
+   (side-condition (not (memq (term x_2) (term (x_3 ...)))))]
+  [(/ (x_1 ...) (x_2 x_3 ...))
+   (/ (x_1 ...) (x_3 ...))])
 
-  [(core-term e)
-   -------------------------
-   (core-term (zero? e))]
-
-  [(core-term e_1)
-   (core-term e_2)
-   (core-term e_3)
-   -------------------------
-   (core-term (if e_1 e_2 e_3))]
-
-  [(core-term e)
-   -------------------------
-   (core-term (mon (k l j) κ e))])
-
-(define-judgment-form CPCF-O-Γ-Δ
-  #:mode (types I I O)
-  #:contract (types Δ all t)
-
-  [------------------------- "I"
-   (types Δ number I)]
-
-  [------------------------- "B"
-   (types Δ boolean B)]
-
-  [(types (Δ ∪ x : t_1) e t_2)
-   ------------------------- "λ"
-   (types Δ (λ (x : t_1) e) (-> t_1 t_2))]
-
-  [--------------------- "var"
-   (types (Δ ∪ x : t) x t)]
-
-  [(types Δ x_1 t_1)
-   (side-condition (different x_1 x_2))
-   ------------------------------------ "var-extend"
-   (types (Δ ∪ x_2 : t_2) x_1 t_1)]
-
-  [(types Δ e_1 (-> t_1 t_2))
-   (types Δ e_2 t_1)
-   ------------------------- "app"
-   (types Δ (e_1 e_2) t_2)]
-
-  [(types (Δ ∪ x : t_1) e t_1)
-   ------------------------- "μ"
-   (types Δ (μ (x : t_1) e) t_1)]
-
-  [(types Δ e_1 B)
-   (types Δ e_2 t_1)
-   (types Δ e_3 t_1)
-   -----------------------------"if"
-   (types Δ (if e_1 e_2 e_3) t_1)]
-
-  [(types Δ e I)
-   -----------------------------"zero?"
-   (types Δ (zero? e) B)]
-
-  [(types Δ e_1 I)
-   (types Δ e_2 I)
-   -----------------------------"op1"
-   (types Δ (op e_1 e_2) I)]
-
-  [(types Δ e_1 B)
-   (types Δ e_2 B)
-   -----------------------------"op2"
-   (types Δ (op2 e_1 e_2) B)]
-
-  [(types Δ e t)
-   (types Δ κ (con t))
-   -----------------------------"mon"
-   (types Δ (mon (k l j) κ e) t)]
-
-  [(types Δ e t)
-   -----------------------------"own"
-   (types Δ (own e l) t)]
-
-  [(types Δ e (-> t B))
-   -----------------------------"flat-ob"
-   (types Δ (flat-ob e (l ...)) (con t))]
-
-  [(types Δ κ_1 (con t_1))
-   (types Δ κ_2 (con t_2))
-   ------------------------- "->"
-   (types Δ (-> κ_1 κ_2) (con (-> t_1 t_2)))]
-
-  [(types Δ κ_1 (con t_1))
-   (types Δ κ_2 (con t_2))
-   ------------------------- "->d"
-   (types Δ (->d κ_1 (λ (x : t) κ_2)) (con (-> t_1 t_2)))])
+(define (apply-reduction-relation*/n red-rel term n [acc '()])
+  (if (= n 0)
+      (cons term acc)
+      (let ([reduced (apply-reduction-relation red-rel term)])
+        (cond
+          [(empty? reduced) (cons term acc)]
+          [(= (length reduced) 1) (apply-reduction-relation*/n red-rel (first reduced) (sub1 n) (cons term acc))]
+          [else (error 'apply-reduction-relation*/n "expected deterministic reduction relation, given ~a" red-rel)]))))
