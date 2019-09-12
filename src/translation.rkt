@@ -9,7 +9,7 @@
          "well-formedness.rkt"
          "utils.rkt")
 
-(define-union-language CPCF-mix source CPCF-O)
+(define-union-language CPCF-mix source CPCF-IO)
 (define-extended-language CPCF-mix*
   CPCF-mix
   [e/κ e κ])
@@ -18,7 +18,7 @@
   decorate : _ p -> e_
   #:post ,(cond
             [(redex-match? CPCF-mix* b/o (term F_))
-             (and (redex-match? CPCF-O e (term e_))
+             (and (redex-match? CPCF-IO e (term e_))
                   (when (empty? (term (free-vars e_)))
                     (judgment-holds (well-formed ∘ ,(unowned-label) e_))))]
             [(redex-match? CPCF-mix* b (term F_))
@@ -51,7 +51,7 @@
    (->d            (decorate/c κ_1 l_j l_server l_client)
                    (λ (x : t) (decorate/c κ_2 l_j l_client l_server)))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   undecorate : e -> (name new _)
   #:post ,(redex-match? CPCF-I e (term new))
   [(undecorate (λ (x : t) e)) (λ (x : t) (undecorate e))]
@@ -65,7 +65,7 @@
   [(undecorate (check (k l) e v)) (check (k l) (undecorate e) (undecorate v))]
   [(undecorate e) e])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   [(undecorate/c (flat-ob e (l ...))) (flat (undecorate e))]
   [(undecorate/c (-> κ_1 κ_2)) (-> (undecorate/c κ_1) (undecorate/c κ_2))]
   [(undecorate/c (->d κ_1 (λ (x : t) κ_2))) (->d (undecorate/c κ_1) (λ (x : t) (undecorate/c κ_2)))])

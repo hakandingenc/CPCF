@@ -28,7 +28,7 @@
   [(δ (>   n_1 n_2)) ,(>   (term n_1) (term n_2))]
   [(δ (=   n_1 n_2)) ,(=   (term n_1) (term n_2))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   closest-label-helper : E                   l ->  l
   [(closest-label-helper hole                l)    l]
   [(closest-label-helper (E e)               l)    (closest-label-helper E l)]
@@ -42,10 +42,10 @@
   [(closest-label-helper (own E l_2)         l_1)  (closest-label-helper E l_2)])
 
 (define unowned-label (make-parameter "unowned"))
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   [(closest-label E) (closest-label-helper E ,(unowned-label))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   term-number/label? : v l -> boolean
   [(term-number/label? (own v l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
@@ -53,7 +53,7 @@
   [(term-number/label? n l) #t]
   [(term-number/label? v l) #f])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   term-match/label? : v v l -> boolean
   [(term-match/label? v_1 (own v_2 l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
@@ -61,7 +61,7 @@
   [(term-match/label? v_1 v_2 l)
    ,((default-equiv) (term v_2) (term v_1))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   term-number? : v -> boolean
   [(term-number? (own v l) l_1)
    (term-number? v)]
@@ -70,7 +70,7 @@
   [(term-number? v)
    #f])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   label-match? : e l -> boolean
   [(label-match? (own v l_2) l_1)
    ,(and ((default-equiv) (term l_1) (term l_2))
@@ -78,7 +78,7 @@
   [(label-match? v l)
    #t])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   term-different/label? : v v l -> boolean
   [(term-different/label? v_1 (own v_2 l_2) l_1)
    ,(and (equal? (term l_1) (term l_2))
@@ -86,12 +86,12 @@
   [(term-different/label? v_1 v_2 l_1)
    ,(not ((default-equiv) (term v_2) (term v_1)))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   get-value : v    ->    v
   [(get-value (own v l)) (get-value v)]
   [(get-value v)         v])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   substitute/c : κ x e -> κ
   [(substitute/c (flat-ob (own e_2 l_2) (l_ob ...)) x e_1)
    (flat-ob (substitute (own e_2 l_2) x (own e_1 l_2)) (l_ob ...))]
@@ -149,7 +149,7 @@
                       base-name]
                      [x x])])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   free-vars : e -> (x ...)
   [(free-vars c) ()]
   [(free-vars (λ (x : t) e))
@@ -170,7 +170,7 @@
   [(free-vars (mon (_ _ _) κ e))
    (∪ (free-vars/c κ) (free-vars e))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   free-vars/c : κ -> (x ...)
   [(free-vars/c (flat-ob e (l_ob ...)))
    (free-vars e)]
@@ -179,7 +179,7 @@
   [(free-vars/c (->d κ_1 (λ (x_1 : t) κ_2)))
    (∪ (free-vars/c κ_1) (/ (free-vars/c κ_2) (x_1)))])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   ∪ : (x ...) ... -> (x ...)
   [(∪ (x_1 ...) (x_2 ...) (x_3 ...) ...)
    (∪ (x_1 ... x_2 ...) (x_3 ...) ...)]
@@ -187,7 +187,7 @@
    (x_1 ...)]
   [(∪) ()])
 
-(define-metafunction CPCF-O
+(define-metafunction CPCF-IO
   / : (x ...) (x ...) -> (x ...)
   [(/ (x ...) ()) (x ...)]
   [(/ (x_1 ... x_2 x_3 ...) (x_2 x_4 ...))

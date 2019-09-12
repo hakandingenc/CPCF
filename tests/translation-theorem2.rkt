@@ -16,7 +16,7 @@
 (define e-count 0)
 (define r-count 0)
 
-(define-metafunction CPCF-O-Γ
+(define-metafunction CPCF-IO-Γ
   [(contains-error? (error l_1 l_2)) #t]
   [(contains-error? c) #f]
   [(contains-error? (λ (x : t) e)) (contains-error? e)]
@@ -52,30 +52,36 @@
    #;(println my-n)
    #;(println (term e))
    (let ([i 50])
-     (define fl (apply-reduction-relation*/n CPCF-O-red (term e) i))
+     (define fl (apply-reduction-relation*/n CPCF-IO-red (term e) i))
      (define sl (apply-reduction-relation*/n CPCF-I-red (term (undecorate e)) i))
      (if (= (length fl) (length sl))
          (andmap
           (λ (t1 t2)
-            (unless (alpha-equivalent? CPCF-I (term (undecorate ,t1) #:lang CPCF-O) t2)
-              (printf "Returning #f because ~v and ~v are not α-eq where t1 = ~v~n" (term (undecorate ,t1) #:lang CPCF-O) t2 t1)
+            (unless (alpha-equivalent? CPCF-I (term (undecorate ,t1) #:lang CPCF-IO) t2)
+              (printf "Returning #f because ~v and ~v are not α-eq where t1 = ~v~n" (term (undecorate ,t1) #:lang CPCF-IO) t2 t1)
               #f))
           fl
           sl)
          (begin
            (println fl)
            (println sl)
-           (traces CPCF-O-red (term e))
+           (traces CPCF-IO-red (term e))
            (traces CPCF-I-red (term (undecorate e)))
            (unless
                (and (= (- (length fl) (length sl)) 1)
                     (andmap
                      (λ (t1 t2)
-                       (unless (alpha-equivalent? CPCF-I (term (undecorate ,t1) #:lang CPCF-O) t2)
-                         (printf "Returning #f because ~v and ~v are not α-eq where t1 = ~v~n" (term (undecorate ,t1) #:lang CPCF-O) t2 t1)
+                       (unless (alpha-equivalent? CPCF-I (term (undecorate ,t1) #:lang CPCF-IO) t2)
+                         (printf "Returning #f because ~v and ~v are not α-eq where t1 = ~v~n" (term (undecorate ,t1) #:lang CPCF-IO) t2 t1)
                          #f))
                      (rest fl)
                      sl))
              (error 'downward)))))))
- #:attempts 50000)
-(printf "n-count = ~a~nb-count = ~a~ne-count = ~a~nr-count = ~a~n" n-count b-count e-count r-count)
+ #:attempts 50000
+ #:keep-going? #t)
+(printf "n-count = ~a~nb-count = ~a~ne-count = ~a~nr-count = ~a~ntotal = ~a~n"
+        n-count
+        b-count
+        e-count
+        r-count
+        (+ n-count b-count e-count r-count))

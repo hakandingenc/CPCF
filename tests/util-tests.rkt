@@ -4,7 +4,7 @@
          "../src/languages.rkt"
          "../src/utils.rkt")
 
-(default-language CPCF-O)
+(default-language CPCF-IO)
 
 (test-equal (term (closest-label hole)) (unowned-label))
 

@@ -1,6 +1,6 @@
 #lang racket
 (provide CPCF-I-red
-         CPCF-O-red)
+         CPCF-IO-red)
 
 (require redex
          "languages.rkt"
@@ -14,15 +14,14 @@
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
    (-->E (op1 n_1 n_2)
-         v_result
+         n_result
          "op1"
-         (where v_result (δ-i (op1 n_1 n_2))))
+         (where n_result (δ (op1 n_1 n_2))))
 
-   (-->E (op2 v_1 v_2)
-         v_result
+   (-->E (op2 b_1 b_2)
+         b_result
          "op2"
-         (where v_result (δ-i (op2 v_1 v_2))))
-
+         (where b_result (δ (op2 b_1 b_2))))
 
    (-->E (zero? 0)
          #t
@@ -87,20 +86,20 @@
    [(--> (in-hole E a1) (in-hole E a2))
     (-->E a1 a2)]))
 
-(define CPCF-O-red
+(define CPCF-IO-red
   (reduction-relation
-   CPCF-O
+   CPCF-IO
    #:domain e
 
    ; IS THIS ELABORATION APPROPRIATE?
    ; (i.e. What happens when there's only one rule)
    (--> (in-hole E (op1 v_1 v_2))
-        (in-hole E v_result)
+        (in-hole E n_result)
         "op1"
-        (where v_3 (get-value v_1))
-        (where v_4 (get-value v_2))
+        (where n_1 (get-value v_1))
+        (where n_2 (get-value v_2))
         (where l (closest-label E))
-        (where v_result (δ-o (op1 v_3 v_4)))
+        (where n_result (δ (op1 n_1 n_2)))
         (side-condition (term (term-number/label? v_1 l)))
         (side-condition (term (term-number/label? v_2 l))))
 
@@ -118,12 +117,12 @@
         (side-condition (term (term-different/label? 0 v l))))
 
    (--> (in-hole E (op2 v_1 v_2))
-        (in-hole E v_result)
+        (in-hole E b_result)
         "op2"
-        (where v_3 (get-value v_1))
-        (where v_4 (get-value v_2))
+        (where b_1 (get-value v_1))
+        (where b_2 (get-value v_2))
         (where l (closest-label E))
-        (where v_result (δ-o (op2 v_3 v_4)))
+        (where b_result (δ (op2 b_1 b_2)))
         (side-condition (term (label-match? v_1 l)))
         (side-condition (term (label-match? v_2 l))))
 
